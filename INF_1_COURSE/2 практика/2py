@@ -1,0 +1,4 @@
+n = int(input("основание: "))
+a = str(int(input("число: ")))
+print(int(a,n))
+
