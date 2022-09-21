@@ -81,3 +81,17 @@ if len(str(x)) == 2:
     else: print('цифры равны')
 else: print('число не двузначное')
     ---------------------------------------------
+from math import sqrt
+a = int(input())
+b = int(input())
+c = int(input())
+d = b*b - 4*a*c
+if d < 0: print('нет корней')
+if d == 0:
+    x = -b / (2*a)
+    print(x)
+if d > 0:
+    x1= (-b + sqrt(d)) / (2*a)
+    x2= (-b - sqrt(d)) / (2*a)
+    print(x1,x2)
+====================================================
