@@ -118,4 +118,12 @@ for i in range(2, x+1):
         k+=1
 if k==1: print('простое')
 -------------------------------------------------------
-
+a=int(input())
+n=int(input())
+x=a
+listt = []
+while x>0:
+    k=x%n
+    listt.append(k)
+    x=x//n
+print(listt[::-1])
