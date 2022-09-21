@@ -67,3 +67,10 @@ print(list[::-1]) #8 114454
 n = int(input("основание: "))
 a = str(int(input("число: ")))
 print(int(a,n))
+----------------------------------------------
+x = str(int(input()))
+if len(str(x)) == 2:
+    if '3' in str(x): print('yes')
+    else: print('no')
+else: print('число не двузначное')
+------------------------------------------------
