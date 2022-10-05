@@ -9,4 +9,32 @@
 ## A=0,1001110(пк)=0, 1001110(ок)=0, 1001110(дк)
 ## -B=1,0111000(пк)=1,1000111(ок)=1,1001000(дк)
 ## 
+       PYTHON
+
+
+
+#1
+import math
+print('введите x и y')
+x=input('x = ')
+y=input('y = ')
+f=math.log(math.fabs(math.sin(x+y)))
+print(f)
+
+
+#2
+import math
+print('введите x и y')
+x=input('x = ')
+y=input('y = ')
+if math.sin(x+y)<=-0.5:
+    f=math.atan(math.pow(math.fabs(x-y),1/3)*(x*math.exp(y)))
+    
+elif -0.5<math.sin(x+y)<0.5:
+    f=3*math.log(math.fabs(x*y),3)
+    
+else:
+    f=math.pow(x,3)+math.pow(y,1.5)
+
+print(f)
 
