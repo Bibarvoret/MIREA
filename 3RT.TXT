@@ -38,3 +38,15 @@ else:
 
 print(f)
 
+
+#3
+import math
+print('введите a и b, шаг hx')
+a=input('a = ')
+b=input('b = ')
+hx=input('hx = ')
+x=a
+while x<=b:
+    f=math.pow(math.cos(math.exp(x)),3)
+    print('x= ',x, 'f= ',f)
+    x=x+hx
