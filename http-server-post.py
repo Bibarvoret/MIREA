@@ -1,0 +1,1 @@
+import http.server, sys; http.server.HTTPServer(('0.0.0.0', 8000), type('U', (http.server.SimpleHTTPRequestHandler,), {'do_POST': lambda s: (s.send_response(200), s.end_headers(), s.wfile.write(b'OK'), open('file.ext', 'wb').write(s.rfile.read(int(s.headers['Content-Length']))))})).serve_forever()
