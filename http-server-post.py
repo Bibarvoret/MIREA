@@ -1,0 +1,1 @@
+import http.server; class U(http.server.SimpleHTTPRequestHandler): def do_POST(self): self.send_response(200); self.end_headers(); self.wfile.write(b'OK')\nhttp.server.HTTPServer(('0.0.0.0', 8000), U).serve_forever()
