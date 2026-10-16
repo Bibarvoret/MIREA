@@ -1,0 +1,72 @@
+export CH='http://default:N3v3rs33nD4T4@db.htb-airport.htb'
+                                                                                                                                        
+┌──(kali㉿kali)-[~/HTB/stream/]
+└─$ curl -s -G --data-urlencode "query=SHOW GRANTS FOR default" "$CH/"
+GRANT CHECK, SHOW, SELECT, INSERT, ALTER, CREATE, DROP, UNDROP TABLE, TRUNCATE, OPTIMIZE, BACKUP, KILL QUERY, KILL TRANSACTION, MOVE PARTITION BETWEEN SHARDS, ROLE ADMIN, CREATE ROW POLICY, ALTER ROW POLICY, DROP ROW POLICY, CREATE MASKING POLICY, ALTER MASKING POLICY, DROP MASKING POLICY, CREATE QUOTA, ALTER QUOTA, DROP QUOTA, CREATE SETTINGS PROFILE, ALTER SETTINGS PROFILE, DROP SETTINGS PROFILE, ALLOW SQL SECURITY NONE, SHOW ACCESS, SHOW HANDLERS, SYSTEM, dictGet, displaySecretsInShowAndSelect, INTROSPECTION, CLUSTER, FILE, URL, REMOTE, MONGO, REDIS, MYSQL, POSTGRES, SQLITE, ODBC, JDBC, HDFS, S3, HIVE, AZURE, KAFKA, NATS, RABBITMQ, YTSAURUS, ARROW FLIGHT, BIGQUERY, SOURCES ON *.* TO default WITH GRANT OPTION
+GRANT SOURCES ON *.* TO default WITH GRANT OPTION
+GRANT TABLE ENGINE ON * TO default WITH GRANT OPTION
+GRANT SET DEFINER ON * TO default WITH GRANT OPTION
+GRANT CREATE USER, ALTER USER, DROP USER, CREATE ROLE, ALTER ROLE, DROP ROLE, IMPERSONATE ON * TO default WITH GRANT OPTION
+GRANT ALTER NAMED COLLECTION, CREATE NAMED COLLECTION, DROP NAMED COLLECTION, SHOW NAMED COLLECTIONS, NAMED COLLECTION ON * TO default WITH GRANT OPTION
+                                                                                                                                        
+┌──(kali㉿kali)-[~/HTB/stream/]
+└─$ curl -s -G --data-urlencode "query=SELECT * FROM system.disks FORMAT Vertical" "$CH/"
+Row 1:
+──────
+name:                default
+path:                /var/lib/clickhouse/
+free_space:          6099697664 -- 6.10 billion
+total_space:         15410860032 -- 15.41 billion
+unreserved_space:    6099697664 -- 6.10 billion
+keep_free_space:     0
+type:                Local
+object_storage_type: None
+metadata_type:       None
+is_encrypted:        0
+is_read_only:        0
+is_write_once:       0
+is_remote:           0
+is_broken:           0
+cache_path:          
+                                                                                                                                        
+┌──(kali㉿kali)-[~/HTB/stream/]
+└─$ curl -s -G --data-urlencode "query=SELECT * FROM file('/etc/hostname','LineAsString')" "$CH/"
+
+Code: 291. DB::Exception: File `/etc/hostname` is not inside `/var/lib/clickhouse/user_files`. (DATABASE_ACCESS_DENIED) (version 26.8.1.1746 (official build))
+                                                                                                                                        
+┌──(kali㉿kali)-[~/HTB/stream/]
+└─$ curl -s -G --data-urlencode "query=INSERT INTO FUNCTION file('/tmp/ch_write_test.txt','LineAsString','s String') SELECT 'p'" "$CH/"
+Code: 291. DB::Exception: File `/tmp/ch_write_test.txt` is not inside `/var/lib/clickhouse/user_files`. (DATABASE_ACCESS_DENIED) (version 26.8.1.1746 (official build))
+                                                                                                                                        
+
+clickhouse-client --user default --password N3v3rs33nD4T4 -q "SELECT currentUser()"
+
+default
+
+martin_cole@stream:~/backups$ ps auxww | grep -iE 'drain|dlq|format' | grep -v grep
+
+svc-inf+    1261  2.3 17.2 4926388 690180 ?      Ssl  13:39   5:28 java -Xmx1G -Xms1G -server -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+ExplicitGCInvokesConcurrent -XX:MaxInlineLevel=15 -Xlog:gc*:file=/opt/kafka_2.13-4.3.1/bin/../logs/kafkaServer-gc.log:time,tags:filecount=10,filesize=100M -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dkafka.logs.dir=/opt/kafka_2.13-4.3.1/bin/../logs -Dlog4j2.configurationFile=/opt/kafka_2.13-4.3.1/bin/../config/log4j2.yaml -cp /opt/kafka_2.13-4.3.1/bin/../libs/activation-1.1.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/aopalliance-repackaged-3.0.6.jar:/opt/kafka_2.13-4.3.1/bin/../libs/argparse4j-0.7.0.jar:/opt/kafka_2.13-4.3.1/bin/../libs/caffeine-3.2.0.jar:/opt/kafka_2.13-4.3.1/bin/../libs/classgraph-4.8.179.jar:/opt/kafka_2.13-4.3.1/bin/../libs/commons-beanutils-1.11.0.jar:/opt/kafka_2.13-4.3.1/bin/../libs/commons-collections-3.2.2.jar:/opt/kafka_2.13-4.3.1/bin/../libs/commons-digester-2.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/commons-logging-1.3.5.jar:/opt/kafka_2.13-4.3.1/bin/../libs/commons-validator-1.10.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/connect-api-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/connect-basic-auth-extension-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/connect-json-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/connect-mirror-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/connect-mirror-client-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/connect-runtime-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/connect-transforms-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/hash4j-0.22.0.jar:/opt/kafka_2.13-4.3.1/bin/../libs/HdrHistogram-2.2.2.jar:/opt/kafka_2.13-4.3.1/bin/../libs/hk2-api-3.0.6.jar:/opt/kafka_2.13-4.3.1/bin/../libs/hk2-locator-3.0.6.jar:/opt/kafka_2.13-4.3.1/bin/../libs/hk2-utils-3.0.6.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jackson-annotations-2.21.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jackson-core-2.21.2.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jackson-databind-2.21.2.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jackson-dataformat-csv-2.21.2.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jackson-dataformat-yaml-2.21.2.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jackson-datatype-jdk8-2.21.2.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jackson-jakarta-rs-base-2.21.2.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jackson-jakarta-rs-json-provider-2.21.2.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jackson-module-blackbird-2.21.2.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jackson-module-jakarta-xmlbind-annotations-2.21.2.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jakarta.activation-2.0.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jakarta.activation-api-2.1.0.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jakarta.annotation-api-2.1.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jakarta.inject-api-2.0.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jakarta.servlet-api-6.0.0.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jakarta.validation-api-3.0.2.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jakarta.ws.rs-api-3.1.0.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jakarta.xml.bind-api-3.0.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/javassist-3.30.2-GA.jar:/opt/kafka_2.13-4.3.1/bin/../libs/javax.activation-api-1.2.0.jar:/opt/kafka_2.13-4.3.1/bin/../libs/javax.annotation-api-1.3.2.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jaxb-api-2.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jersey-client-3.1.10.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jersey-common-3.1.10.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jersey-container-servlet-3.1.10.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jersey-container-servlet-core-3.1.10.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jersey-hk2-3.1.10.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jersey-server-3.1.10.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jetty-alpn-client-12.0.34.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jetty-client-12.0.34.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jetty-ee10-servlet-12.0.34.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jetty-ee10-servlets-12.0.34.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jetty-http-12.0.34.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jetty-io-12.0.34.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jetty-security-12.0.34.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jetty-server-12.0.34.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jetty-session-12.0.34.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jetty-util-12.0.34.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jline-3.30.4.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jopt-simple-5.0.4.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jose4j-0.9.6.jar:/opt/kafka_2.13-4.3.1/bin/../libs/jspecify-1.0.0.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka_2.13-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-clients-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-coordinator-common-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-group-coordinator-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-group-coordinator-api-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-metadata-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-raft-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-server-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-server-common-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-share-coordinator-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-shell-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-storage-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-storage-api-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-streams-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-streams-examples-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-streams-scala_2.13-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-streams-test-utils-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-tools-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-tools-api-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/kafka-transaction-coordinator-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/log4j-1.2-api-2.25.4.jar:/opt/kafka_2.13-4.3.1/bin/../libs/log4j-api-2.25.4.jar:/opt/kafka_2.13-4.3.1/bin/../libs/log4j-core-2.25.4.jar:/opt/kafka_2.13-4.3.1/bin/../libs/log4j-slf4j-impl-2.25.4.jar:/opt/kafka_2.13-4.3.1/bin/../libs/lz4-java-1.10.2.jar:/opt/kafka_2.13-4.3.1/bin/../libs/maven-artifact-3.9.15.jar:/opt/kafka_2.13-4.3.1/bin/../libs/metrics-core-2.2.0.jar:/opt/kafka_2.13-4.3.1/bin/../libs/opentelemetry-proto-1.3.2-alpha.jar:/opt/kafka_2.13-4.3.1/bin/../libs/osgi-resource-locator-1.0.3.jar:/opt/kafka_2.13-4.3.1/bin/../libs/pcollections-4.0.2.jar:/opt/kafka_2.13-4.3.1/bin/../libs/plexus-utils-3.6.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/protobuf-java-3.25.5.jar:/opt/kafka_2.13-4.3.1/bin/../libs/re2j-1.8.jar:/opt/kafka_2.13-4.3.1/bin/../libs/rocksdbjni-10.1.3.jar:/opt/kafka_2.13-4.3.1/bin/../libs/scala-library-2.13.18.jar:/opt/kafka_2.13-4.3.1/bin/../libs/scala-logging_2.13-3.9.6.jar:/opt/kafka_2.13-4.3.1/bin/../libs/scala-reflect-2.13.18.jar:/opt/kafka_2.13-4.3.1/bin/../libs/slf4j-api-1.7.36.jar:/opt/kafka_2.13-4.3.1/bin/../libs/snakeyaml-2.5.jar:/opt/kafka_2.13-4.3.1/bin/../libs/snappy-java-1.1.10.7.jar:/opt/kafka_2.13-4.3.1/bin/../libs/swagger-annotations-2.2.39.jar:/opt/kafka_2.13-4.3.1/bin/../libs/trogdor-4.3.1.jar:/opt/kafka_2.13-4.3.1/bin/../libs/zstd-jni-1.5.6-10.jar kafka.Kafka /opt/kafka_2.13-4.3.1/config/server.properties
+
+martin_cole@stream:~/backups$ ls -la /opt/ 2>/dev/null
+
+total 32
+
+drwxr-xr-x  8 root      root      4096 Oct  6 08:24 .
+
+drwxr-xr-x 23 root      root      4096 Oct  6 08:24 ..
+
+drwxr-xr-x  4 svc-infra svc-infra 4096 Oct  6 08:24 aidx-pipeline
+
+drwxr-xr-x  8 svc-infra svc-infra 4096 Oct  6 08:24 kafka_2.13-4.3.1
+
+drwxr-xr-x  2 root      root      4096 Oct  6 08:24 ops
+
+drwxr-xr-x  5 root      root      4096 Oct  6 08:24 sysinternalsEBPF
+
+drwx------  2 root      root      4096 Oct 16 13:39 sysmon
+
+drwxr-xr-x  2 svc-infra svc-infra 4096 Oct  6 08:24 terminal-api
+
+martin_cole@stream:~/backups$ grep -rniE 'formatter|dlq|drain' /tmp/restore/ | grep -iE 'py|script|path' | head -20
+
+martin_cole@stream:~/backups$
